@@ -1,65 +1,62 @@
-use std::io::{self, BufRead};
+use std::{
+    cmp::Reverse,
+    io::{self, Read},
+};
 
 use anyhow::Result;
-
-/// A storage for `N` largest values inserted. Initially all values are `0`.
-struct Largest<const N: usize> {
-    values: [usize; N],
-}
-
-impl<const N: usize> Largest<N> {
-    fn new() -> Self {
-        Self { values: [0; N] }
-    }
-
-    /// Inserts a new value into the storage, replacing the smallest value if
-    /// necessary.
-    fn insert(&mut self, value: usize) {
-        let mut i = 0;
-        while i < N && self.values[i] >= value {
-            i += 1;
-        }
-        if i < N {
-            self.values[i..].rotate_right(1);
-            self.values[i] = value;
-        }
-    }
-
-    /// Returns an iterator over the values in the descending order.
-    fn iter(&self) -> impl Iterator<Item = &usize> {
-        self.values.iter()
-    }
-
-    /// Returns the maximum value.
-    fn max(&self) -> usize {
-        self.values[0]
-    }
-}
+use itertools::Itertools;
 
 fn main() -> Result<()> {
-    let stdin = io::stdin();
-    let mut lines = io::BufReader::new(stdin).lines();
-    let mut calories = Largest::<3>::new();
-
-    while let Some(line) = lines.by_ref().next() {
-        let mut sum = line?.parse::<usize>()?;
-        while let Some(line) = lines.by_ref().next() {
-            let line = line?;
-            if line.is_empty() {
-                break;
-            }
-            sum += line.parse::<usize>()?;
-        }
-        calories.insert(sum);
-    }
-
-    println!(
-        "The total calories carried by the elf carrying the most calories: {}",
-        calories.max()
-    );
-    println!(
-        "The total calories carried by the elves: {}",
-        calories.iter().sum::<usize>()
-    );
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input)?;
+    println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
     Ok(())
+}
+
+fn parse(input: &str) -> impl Iterator<Item = usize> + '_ {
+    input
+        .lines()
+        .map(|line| line.parse::<usize>().ok())
+        .batching(|it| it.map_while(|x| x).sum1())
+}
+
+fn part1(input: &str) -> usize {
+    parse(input).max().unwrap_or_default()
+}
+
+fn part2(input: &str) -> usize {
+    parse(input)
+        .map(Reverse)
+        .k_smallest(3)
+        .map(|value| value.0)
+        .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const INPUT: &str = "\
+1000
+2000
+3000
+
+4000
+
+5000
+6000
+
+7000
+8000
+9000
+
+10000
+";
+
+    #[test]
+    fn example() {
+        assert_eq!(part1(INPUT), 24000);
+        assert_eq!(part2(INPUT), 45000);
+    }
 }
