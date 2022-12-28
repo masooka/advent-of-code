@@ -1,7 +1,10 @@
 [package]
-name = "aoc02"
+name = "day02"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 anyhow = "1"
+itertools = "0.10.5"
+nom = "7"
+num_enum = "0.5"
