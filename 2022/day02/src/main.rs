@@ -4,6 +4,7 @@ use anyhow::{anyhow, bail, Error, Result};
 use itertools::process_results;
 use nom::{
     character::complete::{self, one_of},
+    combinator::all_consuming,
     sequence::separated_pair,
     IResult,
 };
@@ -92,15 +93,8 @@ fn main() -> Result<()> {
 
 fn parse(input: &str) -> impl Iterator<Item = Result<(char, char)>> + '_ {
     input.lines().map(|line| {
-        let (input, (opponent, player)) = strategy_guide(line)
+        let (_, (opponent, player)) = all_consuming(strategy_guide)(line)
             .map_err(|e| anyhow!("failed to parse line: \"{}\": {}", line, e))?;
-        if !input.is_empty() {
-            bail!(
-                "failed to parse line: \"{}\": leftover input: {}",
-                line,
-                input
-            );
-        }
         Ok((opponent, player))
     })
 }
