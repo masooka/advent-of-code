@@ -6,7 +6,12 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use itertools::process_results;
-use nom::{character::complete, combinator::map_res, sequence::separated_pair, IResult};
+use nom::{
+    character::complete,
+    combinator::{all_consuming, map_res},
+    sequence::separated_pair,
+    IResult,
+};
 
 fn main() -> Result<()> {
     let mut input = String::new();
@@ -20,11 +25,8 @@ fn parse<Idx: FromStr>(
     input: &str,
 ) -> impl Iterator<Item = Result<(RangeInclusive<Idx>, RangeInclusive<Idx>)>> + '_ {
     input.lines().map(|line| {
-        let (input, (start, end)) = assignment_pair(line)
+        let (_, (start, end)) = all_consuming(assignment_pair)(line)
             .map_err(|e| anyhow!("failed to parse line \"{}\": {}", line, e))?;
-        if !input.is_empty() {
-            return Err(anyhow!("unexpected input \"{}\"", input));
-        }
         Ok((start, end))
     })
 }
