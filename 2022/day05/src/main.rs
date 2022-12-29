@@ -1,4 +1,7 @@
-use std::io::{self, Read};
+use std::{
+    io::{self, Read},
+    mem,
+};
 
 use anyhow::{anyhow, Result};
 use nom::{
@@ -18,6 +21,43 @@ struct RearrangementStep {
     to: usize,
 }
 
+struct CrateStacks {
+    stacks: Vec<Vec<char>>,
+}
+
+impl CrateStacks {
+    fn new(stacks: Vec<Vec<char>>) -> Self {
+        Self { stacks }
+    }
+
+    fn top_crates(&self) -> Vec<char> {
+        self.stacks
+            .iter()
+            .map(|s| s.last().copied().unwrap_or('.'))
+            .collect()
+    }
+
+    fn move_crate(&mut self, from: usize, to: usize) -> Result<()> {
+        let crate_ = self.stacks[from].pop().ok_or_else(|| {
+            anyhow!(
+                "Tried to move crate from empty stack {} to stack {}",
+                from,
+                to
+            )
+        })?;
+        self.stacks[to].push(crate_);
+        Ok(())
+    }
+
+    fn move_multiple_crates(&mut self, from: usize, to: usize, num: usize) {
+        let from_stack = mem::take(&mut self.stacks[from]);
+        self.stacks[to].extend(from_stack[from_stack.len() - num..].iter());
+        drop(mem::replace(&mut self.stacks[from], from_stack));
+        let new_len = self.stacks[from].len() - num;
+        self.stacks[from].truncate(new_len);
+    }
+}
+
 fn main() -> Result<()> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
@@ -29,7 +69,7 @@ fn main() -> Result<()> {
 fn parse(
     input: &str,
 ) -> Result<(
-    Vec<Vec<char>>,
+    CrateStacks,
     impl Iterator<Item = Result<RearrangementStep>> + '_,
 )> {
     let mut lines = input.lines();
@@ -59,7 +99,7 @@ fn parse(
             .map(|(_, step)| step)
             .map_err(|e| anyhow!("failed to parse line: \"{}\": {}", line, e))
     });
-    Ok((stacks, iter))
+    Ok((CrateStacks::new(stacks), iter))
 }
 
 fn stacks_row(input: &str) -> IResult<&str, Vec<char>> {
@@ -102,32 +142,20 @@ fn part1(input: &str) -> Result<String> {
         let step = step?;
         let mut remaining = step.num;
         while remaining > 0 {
-            let sym = stacks[step.from]
-                .pop()
-                .ok_or_else(|| anyhow!("invalid input"))?;
-            stacks[step.to].push(sym);
+            stacks.move_crate(step.from, step.to)?;
             remaining -= 1;
         }
     }
-    Ok(stacks
-        .iter()
-        .map(|s| s.last().copied().unwrap_or(' '))
-        .collect())
+    Ok(stacks.top_crates().into_iter().collect())
 }
 
 fn part2(input: &str) -> Result<String> {
     let (mut stacks, iter) = parse(input)?;
     for step in iter {
         let step = step?;
-        let to_move = stacks[step.from][stacks[step.from].len() - step.num..].to_vec();
-        stacks[step.to].extend(to_move);
-        let new_len = stacks[step.from].len() - step.num;
-        stacks[step.from].truncate(new_len);
+        stacks.move_multiple_crates(step.from, step.to, step.num);
     }
-    Ok(stacks
-        .iter()
-        .map(|s| s.last().copied().unwrap_or(' '))
-        .collect())
+    Ok(stacks.top_crates().into_iter().collect())
 }
 
 #[cfg(test)]
