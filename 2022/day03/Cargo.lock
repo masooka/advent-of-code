@@ -4,18 +4,9 @@ version = 3
 
 [[package]]
 name = "anyhow"
-version = "1.0.66"
+version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
-
-[[package]]
-name = "aoc03"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bit-set",
- "itertools",
-]
+checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
 
 [[package]]
 name = "bit-set"
@@ -31,6 +22,15 @@ name = "bit-vec"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
+
+[[package]]
+name = "day03"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bit-set",
+ "itertools",
+]
 
 [[package]]
 name = "either"
