@@ -1,5 +1,5 @@
 [package]
-name = "aoc24"
+name = "day24"
 version = "0.1.0"
 edition = "2021"
 
