@@ -36,44 +36,21 @@ impl Map {
     fn score(&self, x: usize, y: usize) -> usize {
         let height = self.map[y][x];
         let mut score = 1;
-
-        let mut distance = 0;
-        for row in self.map.iter().take(y).rev() {
-            distance += 1;
-            if row[x] >= height {
-                break;
-            }
-        }
-        score *= distance;
-
-        let mut distance = 0;
-        for row in self.map.iter().skip(y + 1) {
-            distance += 1;
-            if row[x] >= height {
-                break;
-            }
-        }
-        score *= distance;
-
-        let mut distance = 0;
-        for cell in self.map[y].iter().take(x).rev() {
-            distance += 1;
-            if *cell >= height {
-                break;
-            }
-        }
-        score *= distance;
-
-        let mut distance = 0;
-        for cell in self.map[y].iter().skip(x + 1) {
-            distance += 1;
-            if *cell >= height {
-                break;
-            }
-        }
-        score *= distance;
-
+        score *= Self::distance(height, self.map.iter().take(y).rev().map(|row| row[x]));
+        score *= Self::distance(height, self.map.iter().skip(y + 1).map(|row| row[x]));
+        score *= Self::distance(height, self.map[y].iter().take(x).rev().copied());
+        score *= Self::distance(height, self.map[y].iter().skip(x + 1).copied());
         score
+    }
+
+    fn distance(height: u8, iter: impl Iterator<Item = u8>) -> usize {
+        let mut distance = 0;
+        iter.take_while(|&i| {
+            distance += 1;
+            i < height
+        })
+        .count();
+        distance
     }
 
     fn max_score(&self) -> usize {
