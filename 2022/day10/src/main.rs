@@ -1,6 +1,14 @@
-use std::io;
+use std::io::{self, Read};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete,
+    combinator::{all_consuming, map},
+    sequence::separated_pair,
+    IResult,
+};
 
 struct Crt {
     pixels: Vec<bool>,
@@ -29,9 +37,8 @@ impl Crt {
 
 #[allow(clippy::cast_sign_loss)]
 fn main() -> Result<()> {
-    let input = io::read_to_string(io::stdin())?;
-    let mut lines = input.split('\n').collect::<Vec<_>>();
-    lines.pop();
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input)?;
 
     let mut x = 1;
     let mut cycle = 0;
@@ -40,13 +47,10 @@ fn main() -> Result<()> {
     let mut sampling_cycle = sampling_iter.next().unwrap();
     let mut sum = 0;
     let mut crt = Crt::new();
-    for line in lines {
-        let mut iter = line.split(' ');
-        let instruction = iter.next().unwrap();
-        let argument = iter.next().unwrap_or("0").parse::<i32>()?;
-
+    for instruction in parse(&input) {
+        let instruction = instruction?;
         match instruction {
-            "addx" => {
+            Instruction::Addx(arg) => {
                 cycle += 1;
                 if visible(cycle, x) {
                     crt.set(cycle);
@@ -63,9 +67,9 @@ fn main() -> Result<()> {
                         sampling_cycle = &usize::MAX;
                     }
                 }
-                x += argument;
+                x += arg;
             }
-            "noop" => {
+            Instruction::Noop => {
                 cycle += 1;
                 if visible(cycle, x) {
                     crt.set(cycle);
@@ -79,14 +83,37 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            _ => panic!("Unknown instruction"),
         }
     }
 
-    println!("Part 1: {}", sum);
+    println!("Part 1: {sum}");
     println!("Part 2:");
     crt.display();
     Ok(())
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Instruction {
+    Addx(i32),
+    Noop,
+}
+
+fn parse(input: &str) -> impl Iterator<Item = Result<Instruction>> + '_ {
+    input.lines().map(|line| {
+        let (_, instruction) =
+            all_consuming(instruction)(line).map_err(|s| anyhow!("Invalid instruction: {s}"))?;
+        Ok(instruction)
+    })
+}
+
+fn instruction(input: &str) -> IResult<&str, Instruction> {
+    alt((
+        map(
+            separated_pair(tag("addx"), complete::char(' '), complete::i32),
+            |(_, arg)| Instruction::Addx(arg),
+        ),
+        map(tag("noop"), |_| Instruction::Noop),
+    ))(input)
 }
 
 #[allow(clippy::cast_sign_loss)]
